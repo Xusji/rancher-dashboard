@@ -15,8 +15,8 @@
 # 创建并使用多平台构建器
 docker buildx create --name multiplatform-builder --use
 
-# 构建并推送镜像（基于 Rancher v2.10）
-docker buildx build --platform linux/amd64 -t r.do-ny3.gocloudio.com/core/rancher::v2.10-head . --push
+# 构建并推送镜像
+docker buildx build --platform linux/amd64 -t r.do-ny3.gocloudio.com/core/rancher:head . --push
 ```
 
 2. 本地测试运行

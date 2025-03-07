@@ -2,14 +2,9 @@
 import debounce from 'lodash/debounce';
 import isEqual from 'lodash/isEqual';
 import { mapGetters, mapState } from 'vuex';
-import {
-  mapPref,
-  FAVORITE_TYPES
-} from '@shell/store/prefs';
+import { mapPref, FAVORITE_TYPES } from '@shell/store/prefs';
 import { getVersionInfo } from '@shell/utils/version';
-import {
-  addObjects, replaceWith, clear, addObject, sameContents
-} from '@shell/utils/array';
+import { addObjects, replaceWith, clear, addObject, sameContents } from '@shell/utils/array';
 import { sortBy } from '@shell/utils/sort';
 import { ucFirst } from '@shell/utils/string';
 
@@ -22,20 +17,25 @@ import Group from '@shell/components/nav/Group';
 import LocaleSelector from '@shell/components/LocaleSelector';
 
 export default {
-  name:       'SideNav',
+  name: 'SideNav',
   components: { Group, LocaleSelector },
+
+  emits: ['collapse'],
+
   data() {
     return {
-      groups:        [],
-      gettingGroups: false
+      groups: [],
+      gettingGroups: false,
+      isCollapsed: false,
     };
   },
 
   created() {
     // Ensure that changes to resource that change often don't resort to spamming redraw of the side nav
     this.queueUpdate = debounce(this.getGroups, 500);
-
     this.getGroups();
+    // 监听折叠状态变化
+    this.$watch('isCollapsed', this.handleCollapse);
   },
 
   mounted() {
@@ -44,18 +44,17 @@ export default {
   },
 
   watch: {
-
     /**
      * Keep this simple, we're only interested in new / removed schemas
      */
     allSchemasIds(a, b) {
-      if ( !sameContents(a, b) ) {
+      if (!sameContents(a, b)) {
         this.queueUpdate();
       }
     },
 
     allNavLinksIds(a, b) {
-      if ( !sameContents(a, b) ) {
+      if (!sameContents(a, b)) {
         this.queueUpdate();
       }
     },
@@ -64,13 +63,13 @@ export default {
      * Note - There's no watch on prefs, so this only catches in session changes
      */
     favoriteTypes(a, b) {
-      if ( !isEqual(a, b) ) {
+      if (!isEqual(a, b)) {
         this.queueUpdate();
       }
     },
 
     locale(a, b) {
-      if ( !isEqual(a, b) ) {
+      if (!isEqual(a, b)) {
         this.getGroups();
       }
     },
@@ -79,19 +78,19 @@ export default {
     // Changes to namespaceMode can also change namespaces, so keep this simple and execute both in a shortened queue
 
     namespaceMode(a, b) {
-      if ( a !== b ) {
+      if (a !== b) {
         this.queueUpdate();
       }
     },
 
     namespaces(a, b) {
-      if ( !isEqual(a, b) ) {
+      if (!isEqual(a, b)) {
         this.queueUpdate();
       }
     },
 
     clusterReady(a, b) {
-      if ( !isEqual(a, b) ) {
+      if (!isEqual(a, b)) {
         // Immediately update because you'll see it come in later
         this.getGroups();
       }
@@ -107,7 +106,6 @@ export default {
     $route(a, b) {
       this.$nextTick(() => this.syncNav());
     },
-
   },
 
   computed: {
@@ -125,7 +123,7 @@ export default {
         return { ...product.supportRoute, params: { ...product.supportRoute.params, cluster: this.clusterId } };
       }
 
-      return { name: `c-cluster-${ product?.name }-support` };
+      return { name: `c-cluster-${product?.name}-support` };
     },
 
     displayVersion() {
@@ -158,7 +156,7 @@ export default {
     },
 
     allNavLinks() {
-      if ( !this.clusterId || !this.$store.getters['cluster/schemaFor'](UI.NAV_LINK) ) {
+      if (!this.clusterId || !this.$store.getters['cluster/schemaFor'](UI.NAV_LINK)) {
         return [];
       }
 
@@ -169,12 +167,14 @@ export default {
       const managementReady = this.managementReady;
       const product = this.currentProduct;
 
-      if ( !managementReady || !product ) {
+      if (!managementReady || !product) {
         return [];
       }
 
       // This does take some up-front time, however avoids an even more costly getGroups call
-      return this.$store.getters[`${ product.inStore }/all`](SCHEMA).map((s) => s.id).sort();
+      return this.$store.getters[`${product.inStore}/all`](SCHEMA)
+        .map((s) => s.id)
+        .sort();
     },
 
     namespaces() {
@@ -191,12 +191,12 @@ export default {
      * Fetch navigation by creating groups from product schemas
      */
     getGroups() {
-      if ( this.gettingGroups ) {
+      if (this.gettingGroups) {
         return;
       }
       this.gettingGroups = true;
 
-      if ( !this.clusterReady ) {
+      if (!this.clusterReady) {
         clear(this.groups);
         this.gettingGroups = false;
 
@@ -214,9 +214,9 @@ export default {
         return { ...acc, [p.name]: p };
       }, {});
 
-      if ( this.isExplorer ) {
-        for ( const product of this.activeProducts ) {
-          if ( product.inStore === 'cluster' ) {
+      if (this.isExplorer) {
+        for (const product of this.activeProducts) {
+          if (product.inStore === 'cluster') {
             addObject(loadProducts, product.name);
           }
         }
@@ -238,15 +238,15 @@ export default {
       const clusterId = this.$store.getters['clusterId'];
       const currentType = this.$route.params.resource || '';
 
-      for ( const productId of loadProducts ) {
+      for (const productId of loadProducts) {
         const modes = [TYPE_MODES.BASIC];
 
-        if ( productId === NAVLINKS ) {
+        if (productId === NAVLINKS) {
           // Navlinks produce their own top-level nav items so don't need to show it as a product.
           continue;
         }
 
-        if ( productId === EXPLORER ) {
+        if (productId === EXPLORER) {
           modes.push(TYPE_MODES.FAVORITE);
           modes.push(TYPE_MODES.USED);
         }
@@ -254,21 +254,21 @@ export default {
         // Get all types for all modes
         const typesByMode = this.$store.getters['type-map/allTypes'](productId, modes);
 
-        for ( const mode of modes ) {
+        for (const mode of modes) {
           const types = typesByMode[mode] || {};
           const more = this.$store.getters['type-map/getTree'](productId, mode, types, clusterId, namespaceMode, currentType);
 
-          if ( productId === EXPLORER || !this.isExplorer ) {
+          if (productId === EXPLORER || !this.isExplorer) {
             addObjects(out, more);
           } else {
             const root = more.find((x) => x.name === 'root');
             const other = more.filter((x) => x.name !== 'root');
 
             const group = {
-              name:     productId,
-              label:    this.$store.getters['i18n/withFallback'](`product.${ productId }`, null, ucFirst(productId)),
+              name: productId,
+              label: this.$store.getters['i18n/withFallback'](`product.${productId}`, null, ucFirst(productId)),
               children: [...(root?.children || []), ...other],
-              weight:   productMap[productId]?.weight || 0,
+              weight: productMap[productId]?.weight || 0,
             };
 
             addObject(out, group);
@@ -278,13 +278,13 @@ export default {
     },
 
     getExplorerGroups(out) {
-      if ( this.isExplorer ) {
+      if (this.isExplorer) {
         const allNavLinks = this.allNavLinks;
         const toAdd = [];
         const haveGroup = {};
 
-        for ( const obj of allNavLinks ) {
-          if ( !obj.link ) {
+        for (const obj of allNavLinks) {
+          if (!obj.link) {
             continue;
           }
 
@@ -292,51 +292,51 @@ export default {
           const groupSlug = obj.normalizedGroup;
 
           const entry = {
-            name:        `link-${ obj._key }`,
-            link:        obj.link,
-            target:      obj.actualTarget,
-            label:       obj.labelDisplay,
-            sideLabel:   obj.spec.sideLabel,
-            iconSrc:     obj.spec.iconSrc,
+            name: `link-${obj._key}`,
+            link: obj.link,
+            target: obj.actualTarget,
+            label: obj.labelDisplay,
+            sideLabel: obj.spec.sideLabel,
+            iconSrc: obj.spec.iconSrc,
             description: obj.spec.description,
           };
 
           // If there's a spec.group (groupLabel), all entries with that name go under one nav group
-          if ( groupSlug ) {
-            if ( haveGroup[groupSlug] ) {
+          if (groupSlug) {
+            if (haveGroup[groupSlug]) {
               continue;
             }
 
             haveGroup[groupSlug] = true;
 
             toAdd.push({
-              name:     `navlink-group-${ groupSlug }`,
-              label:    groupLabel,
-              isRoot:   true,
+              name: `navlink-group-${groupSlug}`,
+              label: groupLabel,
+              isRoot: true,
               // This is the item that actually shows up in the nav, since this outer group will be invisible
               children: [
                 {
-                  name:  `navlink-child-${ groupSlug }`,
+                  name: `navlink-child-${groupSlug}`,
                   label: groupLabel,
                   route: {
-                    name:   'c-cluster-navlinks-group',
+                    name: 'c-cluster-navlinks-group',
                     params: {
                       cluster: this.clusterId,
-                      group:   groupSlug,
-                    }
+                      group: groupSlug,
+                    },
                   },
-                }
+                },
               ],
               weight: -100,
             });
           } else {
             toAdd.push({
-              name:     `navlink-${ entry.name }`,
-              label:    entry.label,
-              isRoot:   true,
+              name: `navlink-${entry.name}`,
+              label: entry.label,
+              isRoot: true,
               // This is the item that actually shows up in the nav, since this outer group will be invisible
               children: [entry],
-              weight:   -100,
+              weight: -100,
             });
           }
         }
@@ -348,7 +348,7 @@ export default {
     groupSelected(selected) {
       this.$refs.groups.forEach((grp) => {
         if (grp.canCollapse) {
-          grp.isExpanded = (grp.group.name === selected.name);
+          grp.isExpanded = grp.group.name === selected.name;
         }
       });
     },
@@ -389,18 +389,32 @@ export default {
         });
       }
     },
+
+    toggleCollapse() {
+      this.isCollapsed = !this.isCollapsed;
+    },
+
+    handleCollapse(val) {
+      // 通知父组件调整布局
+      this.$emit('collapse', val);
+      // 触发窗口 resize 事件以便其他组件响应布局变化
+      window.dispatchEvent(new Event('resize'));
+    },
   },
 };
 </script>
 
 <template>
-  <nav class="side-nav">
+  <nav class="side-nav" :class="{ collapsed: isCollapsed }">
+    <div class="nav-header">
+      <!-- 折叠按钮 -->
+      <div class="collapse-btn" @click="toggleCollapse">
+        <i class="icon" :class="{ 'icon-chevron-left': !isCollapsed, 'icon-chevron-right': isCollapsed }" />
+      </div>
+    </div>
     <!-- Actual nav -->
     <div class="nav">
-      <template
-        v-for="(g) in groups"
-        :key="g.name"
-      >
+      <template v-for="g in groups" :key="g.name">
         <Group
           ref="groups"
           id-prefix=""
@@ -413,54 +427,23 @@ export default {
         />
       </template>
     </div>
-    <!-- SideNav footer area (seems to be tied to harvester) -->
-    <div
-      v-if="showProductFooter"
-      class="footer"
-    >
-      <!-- support link -->
-      <router-link
-        :to="supportLink"
-        class="pull-right"
-        role="link"
-        :aria-label="t('nav.support', {hasSupport: true})"
-      >
-        {{ t('nav.support', {hasSupport: true}) }}
+    <!-- SideNav footer area -->
+    <div v-if="showProductFooter" class="footer">
+      <router-link :to="supportLink" class="pull-right" role="link" :aria-label="t('nav.support', { hasSupport: true })">
+        {{ t('nav.support', { hasSupport: true }) }}
       </router-link>
-      <!-- version number -->
-      <span
-        v-clean-tooltip="{content: displayVersion, placement: 'top'}"
-        class="clip version text-muted"
-      >
+      <span v-clean-tooltip="{ content: displayVersion, placement: 'top' }" class="clip version text-muted">
         {{ displayVersion }}
       </span>
-
-      <!-- locale selector -->
-      <LocaleSelector
-        v-if="isSingleProduct && hasMultipleLocales && !isStandaloneHarvester"
-        mode="login"
-        :show-icon="false"
-      />
+      <LocaleSelector v-if="isSingleProduct && hasMultipleLocales && !isStandaloneHarvester" mode="login" :show-icon="false" />
     </div>
     <!-- SideNav footer alternative -->
-    <div
-      v-else
-      class="version text-muted flex"
-    >
-      <router-link
-        v-if="singleProductAbout"
-        :to="singleProductAbout"
-        role="link"
-        :aria-label="t('nav.ariaLabel.productAboutPage')"
-      >
+    <div v-else class="version text-muted flex">
+      <router-link v-if="singleProductAbout" :to="singleProductAbout" role="link" :aria-label="t('nav.ariaLabel.productAboutPage')">
         {{ displayVersion }}
       </router-link>
       <template v-else>
-        <span
-          v-if="isVirtualCluster && isExplorer"
-          v-clean-tooltip="{content: harvesterVersion, placement: 'top'}"
-          class="clip text-muted ml-5"
-        >
+        <span v-if="isVirtualCluster && isExplorer" v-clean-tooltip="{ content: harvesterVersion, placement: 'top' }" class="clip text-muted ml-5">
           (Harvester-{{ harvesterVersion }})
         </span>
       </template>
@@ -469,100 +452,152 @@ export default {
 </template>
 
 <style lang="scss" scoped>
-  .side-nav {
+.side-nav {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-color: var(--nav-bg);
+  border-right: var(--nav-border-size) solid var(--nav-border);
+  overflow-y: auto;
+  transition: width 0.3s ease;
+
+  &.collapsed {
+    width: 50px;
+
+    .nav :deep() {
+      .header h6 span {
+        opacity: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .body {
+        display: none;
+      }
+    }
+
+    .footer,
+    .version {
+      display: none;
+    }
+  }
+
+  .nav-header {
+    height: 40px;
     display: flex;
-    flex-direction: column;
-    .nav {
-      flex: 1;
-      overflow-y: auto;
-    }
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 10px;
+    border-bottom: var(--nav-border-size) solid var(--nav-border);
+  }
 
-    position: relative;
+  .collapse-btn {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
     background-color: var(--nav-bg);
-    border-right: var(--nav-border-size) solid var(--nav-border);
-    overflow-y: auto;
+    border-radius: 4px;
 
-    // h6 is used in Group element
-    :deep() h6 {
-      margin: 0;
-      letter-spacing: normal;
-      line-height: 15px;
-
-      A { padding-left: 0; }
+    &:hover {
+      background-color: var(--nav-hover);
     }
 
-    .tools {
+    i {
+      font-size: 12px;
+    }
+  }
+
+  .nav {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  // h6 is used in Group element
+  :deep() h6 {
+    margin: 0;
+    letter-spacing: normal;
+    line-height: 15px;
+
+    A {
+      padding-left: 0;
+    }
+  }
+
+  .tools {
+    display: flex;
+    margin: 10px;
+    text-align: center;
+
+    A {
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--body-text);
       display: flex;
-      margin: 10px;
-      text-align: center;
+      justify-content: center;
+      outline: 0;
+      flex: 1;
+      padding: 10px;
 
+      &:hover {
+        background: var(--nav-hover);
+        text-decoration: none;
+      }
+
+      > I {
+        margin-right: 4px;
+      }
+    }
+
+    &.router-link-active:not(:hover) {
       A {
-        align-items: center;
-        border: 1px solid var(--border);
-        border-radius: 5px;
-        color: var(--body-text);
-        display: flex;
-        justify-content: center;
-        outline: 0;
-        flex: 1;
-        padding: 10px;
+        background-color: var(--nav-active);
+      }
+    }
+  }
 
-        &:hover {
-          background: var(--nav-hover);
-          text-decoration: none;
-        }
+  .version {
+    cursor: default;
+    margin: 0 10px 10px 10px;
+  }
 
-        > I {
-          margin-right: 4px;
-        }
+  .footer {
+    margin: 20px;
+
+    display: flex;
+    flex: 0;
+    flex-direction: row;
+    > * {
+      flex: 1;
+      color: var(--link);
+
+      &:last-child {
+        text-align: right;
       }
 
-      &.router-link-active:not(:hover) {
-        A {
-          background-color: var(--nav-active);
-        }
+      &:first-child {
+        text-align: left;
       }
+
+      text-align: center;
     }
 
     .version {
       cursor: default;
-      margin: 0 10px 10px 10px;
+      margin: 0px;
     }
 
-    .footer {
-      margin: 20px;
-
-      display: flex;
-      flex: 0;
-      flex-direction: row;
-      > * {
-        flex: 1;
-        color: var(--link);
-
-        &:last-child {
-          text-align: right;
-        }
-
-        &:first-child {
-          text-align: left;
-        }
-
-        text-align: center;
-      }
-
-      .version {
-        cursor: default;
-        margin: 0px;
-      }
-
-      .locale-chooser {
-        cursor: pointer;
-      }
+    .locale-chooser {
+      cursor: pointer;
     }
   }
+}
 
-  .flex {
-    display: flex;
-  }
-
+.flex {
+  display: flex;
+}
 </style>

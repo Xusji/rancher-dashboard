@@ -9,36 +9,36 @@ export default {
   emits: ['cancel-confirmed', 'finish'],
 
   components: { AsyncButton, ResourceCancelModal },
-  props:      {
+  props: {
     mode: {
-      type:    String,
+      type: String,
       default: 'create',
     },
 
     isForm: {
-      type:    Boolean,
+      type: Boolean,
       default: true,
     },
 
     // Override the set of labels shown on the button from the default save/create.
     finishButtonMode: {
-      type:    String,
+      type: String,
       default: null,
     },
 
     confirmCancelRequired: {
-      type:    Boolean,
+      type: Boolean,
       default: false,
     },
 
     confirmBackRequired: {
-      type:    Boolean,
+      type: Boolean,
       default: true,
     },
 
     showCancel: {
-      type:    Boolean,
-      default: true
+      type: Boolean,
+      default: true,
     },
 
     /**
@@ -46,9 +46,9 @@ export default {
      * Define a term based on the parent component to avoid conflicts on multiple components
      */
     componentTestid: {
-      type:    String,
-      default: 'form-footer'
-    }
+      type: String,
+      default: 'form-footer',
+    },
   },
 
   data() {
@@ -96,19 +96,9 @@ export default {
       </button>
     </slot>
     <slot :checkCancel="checkCancel">
-      <AsyncButton
-        v-if="!isView"
-        :data-testid="componentTestid + '-create'"
-        :mode="finishButtonMode || mode"
-        @click="$emit('finish', $event)"
-      />
+      <AsyncButton v-if="!isView" :data-testid="componentTestid + '-create'" :mode="finishButtonMode || mode" @click="$emit('finish', $event)" />
     </slot>
-    <ResourceCancelModal
-      ref="cancelModal"
-      :is-cancel-modal="isCancelModal"
-      :is-form="isForm"
-      @confirm-cancel="confirmCancel($event)"
-    />
+    <ResourceCancelModal ref="cancelModal" :is-cancel-modal="isCancelModal" :is-form="isForm" @confirm-cancel="confirmCancel($event)" />
   </div>
 </template>
 
@@ -123,5 +113,4 @@ export default {
     margin-left: 20px;
   }
 }
-
 </style>

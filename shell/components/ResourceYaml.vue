@@ -287,15 +287,6 @@ export default {
 
 <template>
   <div class="root resource-yaml flex-content">
-    <YamlEditor
-      ref="yamleditor"
-      v-model:value="currentYaml"
-      :mode="mode"
-      :initial-yaml-values="initialYaml"
-      class="yaml-editor flex-content"
-      :editor-mode="editorMode"
-      @onReady="onReady"
-    />
     <slot name="yamlFooter" :currentYaml="currentYaml" :showPreview="showPreview" :yamlPreview="preview" :yamlSave="save" :yamlUnpreview="unpreview" :canDiff="canDiff">
       <Footer v-if="showFooter" class="footer" :class="{ edit: !isView }" :mode="mode" :errors="errors" @save="save" @done="done">
         <template v-if="!isView" #left>
@@ -311,6 +302,15 @@ export default {
         </template>
       </Footer>
     </slot>
+    <YamlEditor
+      ref="yamleditor"
+      v-model:value="currentYaml"
+      :mode="mode"
+      :initial-yaml-values="initialYaml"
+      class="yaml-editor flex-content"
+      :editor-mode="editorMode"
+      @onReady="onReady"
+    />
   </div>
 </template>
 
@@ -321,12 +321,16 @@ export default {
   flex-grow: 1;
 }
 
+.yaml-editor {
+  margin-top: 40px;
+}
+
 .footer {
-  margin-top: 20px;
   right: 0;
   position: sticky;
-  bottom: 0;
+  top: 0;
   background-color: var(--header-bg);
+  z-index: 2;
 
   // Overrides outlet padding
   margin-left: -$space-m;
@@ -335,11 +339,7 @@ export default {
   padding: $space-s $space-m;
 
   &.edit {
-    border-top: var(--header-border-size) solid var(--header-border);
-  }
-
-  @media (max-width: 768px) {
-    bottom: 105px;
+    border-bottom: var(--header-border-size) solid var(--header-border);
   }
 }
 </style>

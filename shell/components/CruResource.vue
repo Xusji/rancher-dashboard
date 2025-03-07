@@ -742,7 +742,7 @@ $logo-space: 100px;
 form.create-resource-container .cru {
   &__footer {
     // Only show border when the mode is not view
-    border-top: var(--header-border-size) solid var(--header-border);
+    border-bottom: var(--header-border-size) solid var(--header-border);
   }
 }
 .cru {
@@ -752,12 +752,13 @@ form.create-resource-container .cru {
 
   &__form {
     display: flex;
-    flex-direction: column;
+    flex-direction: column-reverse;
     flex-grow: 1;
   }
 
   &__content {
     flex-grow: 1;
+    margin-top: 61px;
     &-wizard {
       display: flex;
     }
@@ -766,7 +767,7 @@ form.create-resource-container .cru {
   &__footer {
     right: 0;
     position: sticky;
-    bottom: 0;
+    top: 0;
     background-color: var(--header-bg);
 
     // Overrides outlet padding
@@ -774,10 +775,6 @@ form.create-resource-container .cru {
     margin-right: -$space-m;
     margin-bottom: -$space-m;
     padding: $space-s $space-m;
-
-    @media (max-width: 768px) {
-      bottom: 105px;
-    }
   }
 
   &__errors {

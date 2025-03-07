@@ -1,10 +1,6 @@
 <script>
 import { mapState, mapGetters } from 'vuex';
-import {
-  mapPref,
-  AFTER_LOGIN_ROUTE,
-  THEME_SHORTCUT
-} from '@shell/store/prefs';
+import { mapPref, AFTER_LOGIN_ROUTE, THEME_SHORTCUT } from '@shell/store/prefs';
 import ActionMenu from '@shell/components/ActionMenu';
 import GrowlManager from '@shell/components/GrowlManager';
 import WindowManager from '@shell/components/nav/WindowManager';
@@ -30,7 +26,6 @@ import SideNav from '@shell/components/SideNav';
 const SET_LOGIN_ACTION = 'set-as-login';
 
 export default {
-
   components: {
     PromptRemove,
     PromptRestore,
@@ -54,10 +49,11 @@ export default {
   data() {
     return {
       noLocaleShortcut: process.env.dev || false,
-      wantNavSync:      false,
-      unwatchPin:       undefined,
-      wmPin:            null,
-      draggable:        false,
+      wantNavSync: false,
+      unwatchPin: undefined,
+      wmPin: null,
+      draggable: false,
+      isNavCollapsed: false,
     };
   },
 
@@ -74,7 +70,7 @@ export default {
       const pageActions = [];
       const product = this.rootProduct;
 
-      if ( !product ) {
+      if (!product) {
         return [];
       }
 
@@ -83,8 +79,8 @@ export default {
 
       if (canSetAsHome) {
         pageActions.push({
-          label:  this.t('nav.header.setLoginPage'),
-          action: SET_LOGIN_ACTION
+          label: this.t('nav.header.setLoginPage'),
+          action: SET_LOGIN_ACTION,
         });
       }
 
@@ -101,16 +97,16 @@ export default {
      */
     clusterAndRouteReady() {
       const targetRoute = this.$store.getters['targetRoute'];
-      const routeReady = targetRoute ? this.currentProduct?.name === getProductFromRoute(this.$route) && this.currentProduct?.name === getProductFromRoute(targetRoute) : this.currentProduct?.name === getProductFromRoute(this.$route);
+      const routeReady = targetRoute
+        ? this.currentProduct?.name === getProductFromRoute(this.$route) && this.currentProduct?.name === getProductFromRoute(targetRoute)
+        : this.currentProduct?.name === getProductFromRoute(this.$route);
 
-      return this.clusterReady &&
-        this.clusterId === getClusterFromRoute(this.$route) && routeReady;
+      return this.clusterReady && this.clusterId === getClusterFromRoute(this.$route) && routeReady;
     },
 
     pinClass() {
-      return `pin-${ this.wmPin }`;
+      return `pin-${this.wmPin}`;
     },
-
   },
 
   mounted() {
@@ -128,7 +124,6 @@ export default {
   },
 
   methods: {
-
     handlePageAction(action) {
       if (action.action === SET_LOGIN_ACTION) {
         this.afterLoginRoute = this.getLoginRoute();
@@ -139,8 +134,8 @@ export default {
 
     getLoginRoute() {
       return {
-        name:   this.$route.name,
-        params: this.$route.params
+        name: this.$route.name,
+        params: this.$route.params,
       };
     },
 
@@ -161,22 +156,28 @@ export default {
     async toggleShell() {
       const clusterId = this.$route.params.cluster;
 
-      if ( !clusterId ) {
+      if (!clusterId) {
         return;
       }
 
       const cluster = await this.$store.dispatch('management/find', {
         type: MANAGEMENT.CLUSTER,
-        id:   clusterId,
+        id: clusterId,
       });
 
-      if (!cluster ) {
+      if (!cluster) {
         return;
       }
 
       cluster.openShell();
     },
-  }
+
+    handleNavCollapse(collapsed) {
+      this.isNavCollapsed = collapsed;
+      // 触发窗口 resize 事件以便其他组件响应布局变化
+      window.dispatchEvent(new Event('resize'));
+    },
+  },
 };
 </script>
 
@@ -185,61 +186,24 @@ export default {
     <FixedBanner :header="true" />
     <AwsComplianceBanner v-if="managementReady" />
     <AzureWarning v-if="managementReady" />
-    <div
-      v-if="managementReady"
-      class="dashboard-content"
-      :class="{[pinClass]: true, 'dashboard-padding-left': showTopLevelMenu}"
-    >
+    <div v-if="managementReady" class="dashboard-content" :class="[pinClass, { 'dashboard-padding-left': showTopLevelMenu, 'nav-collapsed': isNavCollapsed }]">
       <Header />
-      <SideNav
-        v-if="clusterReady"
-        class="default-side-nav"
-      />
-      <main
-        v-if="clusterAndRouteReady"
-        class="main-layout"
-      >
-        <router-view
-          :key="$route.path"
-          class="outlet"
-        />
+      <SideNav v-if="clusterReady" class="default-side-nav" @collapse="handleNavCollapse" />
+      <main v-if="clusterAndRouteReady" class="main-layout">
+        <router-view :key="$route.path" class="outlet" />
         <ActionMenu />
         <PromptRemove />
         <PromptRestore />
         <AssignTo />
         <PromptModal />
-        <button
-          v-if="noLocaleShortcut"
-          v-shortkey.once="['shift','l']"
-          class="hide"
-          @shortkey="toggleNoneLocale()"
-        />
-        <button
-          v-if="themeShortcut"
-          v-shortkey.once="['shift','t']"
-          class="hide"
-          @shortkey="toggleTheme()"
-        />
-        <button
-          v-shortkey.once="['f8']"
-          class="hide"
-          @shortkey="wheresMyDebugger()"
-        />
-        <button
-          v-shortkey.once="['`']"
-          class="hide"
-          @shortkey="toggleShell"
-        />
+        <button v-if="noLocaleShortcut" v-shortkey.once="['shift', 'l']" class="hide" @shortkey="toggleNoneLocale()" />
+        <button v-if="themeShortcut" v-shortkey.once="['shift', 't']" class="hide" @shortkey="toggleTheme()" />
+        <button v-shortkey.once="['f8']" class="hide" @shortkey="wheresMyDebugger()" />
+        <button v-shortkey.once="['`']" class="hide" @shortkey="toggleShell" />
       </main>
       <!-- Ensure there's an outlet to show the error (404) page -->
-      <main
-        v-else-if="unmatchedRoute"
-        class="main-layout"
-      >
-        <router-view
-          :key="$route.path"
-          class="outlet"
-        />
+      <main v-else-if="unmatchedRoute" class="main-layout">
+        <router-view :key="$route.path" class="outlet" />
       </main>
       <div
         v-if="$refs.draggableZone"
@@ -252,7 +216,7 @@ export default {
         @dragstart="$refs.draggableZone.onDragStart($event)"
         @dragend="$refs.draggableZone.onDragEnd($event)"
       >
-        <WindowManager @draggable="draggable=$event" />
+        <WindowManager @draggable="draggable = $event" />
       </div>
     </div>
     <FixedBanner :footer="true" />
@@ -261,3 +225,21 @@ export default {
     <DraggableZone ref="draggableZone" />
   </div>
 </template>
+
+<style lang="scss" scoped>
+.dashboard-content {
+  &.nav-collapsed {
+    &.pin-right {
+      grid-template-columns: 50px auto var(--wm-width, 0px);
+    }
+
+    &.pin-bottom {
+      grid-template-columns: 50px auto;
+    }
+
+    &.pin-left {
+      grid-template-columns: var(--wm-width, 0px) 50px auto;
+    }
+  }
+}
+</style>
