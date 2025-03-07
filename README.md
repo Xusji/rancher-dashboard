@@ -15,8 +15,8 @@
 # 创建并使用多平台构建器
 docker buildx create --name multiplatform-builder --use
 
-# 构建并推送镜像
-docker buildx build --platform linux/amd64 -t r.do-ny3.gocloudio.com/core/rancher:latest . --push
+# 构建并推送镜像（基于 Rancher v2.10）
+docker buildx build --platform linux/amd64 -t r.do-ny3.gocloudio.com/core/rancher::v2.10-head . --push
 ```
 
 2. 本地测试运行
@@ -46,3 +46,4 @@ docker run -d \
 1. 确保 80 和 443 端口未被占用
 2. 需要有 r.do-ny3.gocloudio.com 镜像仓库的访问权限
 3. 首次访问可能需要等待几分钟才能完成初始化
+4. 基于 Rancher v2.10 版本构建
