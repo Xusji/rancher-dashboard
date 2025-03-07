@@ -16,14 +16,14 @@
 docker buildx create --name multiplatform-builder --use
 
 # 构建并推送镜像（基于 Rancher v2.10）
-docker buildx build --platform linux/amd64 -t r.do-ny3.gocloudio.com/core/rancher::v2.10-head . --push
+docker buildx build --platform linux/amd64 -t r.do-ny3.gocloudio.com/core/rancher:v2.10-head . --push
 ```
 
 2. 本地测试运行
 
 ```bash
 # 拉取镜像
-docker pull r.do-ny3.gocloudio.com/core/rancher:latest
+docker pull r.do-ny3.gocloudio.com/core/rancher:v2.10-head
 
 # 运行容器
 docker run -d \
@@ -33,7 +33,7 @@ docker run -d \
   -p 80:80 \
   -p 443:443 \
   -e CATTLE_BOOTSTRAP_PASSWORD=password \
-  r.do-ny3.gocloudio.com/core/rancher:latest
+  r.do-ny3.gocloudio.com/core/rancher:v2.10-head
 ```
 
 ### 访问
