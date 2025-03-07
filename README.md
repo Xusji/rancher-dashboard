@@ -1,38 +1,48 @@
 # Rancher Dashboard
-Rancher Dashboard is the UI that powers [Rancher](https://www.rancher.com/products/rancher).
 
-Rancher Dashboard supports an extension mechanism that allows developers to independently provide additional functionality to Rancher. You can learn more from our [Rancher Extensions Docs](https://extensions.rancher.io).
+## 构建 Docker 镜像
 
-# What is it?
+### 环境要求
 
-Rancher Dashboard provides a sophisticated UI for managing Kubernetes clusters and Workloads.
+- Docker 20.10.0 或更高版本
+- Docker Buildx（用于多平台构建）
 
-<img src="docusaurus/docs/internal/getting-started/screenshots/home.png" />
+### 构建步骤
 
-## Internal Developer Docs
+1. 构建 AMD64 (Linux) 平台镜像
 
-These docs are intended only for Dashboard UI developers.
+```bash
+# 创建并使用多平台构建器
+docker buildx create --name multiplatform-builder --use
 
-If you're building extensions, please see: https://extensions.rancher.io.
+# 构建并推送镜像
+docker buildx build --platform linux/amd64 -t r.do-ny3.gocloudio.com/core/rancher:latest . --push
+```
 
-For internal documentation, see [Rancher UI Internal Documentation](https://extensions.rancher.io/internal/docs).
+2. 本地测试运行
 
-## Contributing
+```bash
+# 拉取镜像
+docker pull r.do-ny3.gocloudio.com/core/rancher:latest
 
-We welcome external contributions - please refer to the internal documentation above.
+# 运行容器
+docker run -d \
+  --name rancher-test \
+  --restart unless-stopped \
+  --privileged \
+  -p 80:80 \
+  -p 443:443 \
+  -e CATTLE_BOOTSTRAP_PASSWORD=password \
+  r.do-ny3.gocloudio.com/core/rancher:latest
+```
 
-License
-=======
-Copyright (c) 2014-2025 [SUSE](https://www.suse.com)
+### 访问
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+- Web UI: https://localhost 或 http://localhost
+- 默认密码: password（可通过 CATTLE_BOOTSTRAP_PASSWORD 环境变量修改）
 
-[http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
+### 注意事项
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+1. 确保 80 和 443 端口未被占用
+2. 需要有 r.do-ny3.gocloudio.com 镜像仓库的访问权限
+3. 首次访问可能需要等待几分钟才能完成初始化
