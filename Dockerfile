@@ -23,7 +23,7 @@ ENV RESOURCE_BASE=/dashboard/
 RUN yarn run build
 
 # 第二阶段：最终镜像
-FROM rancher/rancher:head
+FROM rancher/rancher:v2.11.0-hotfix-42a5.1
 
 # 复制构建好的 Dashboard UI
 COPY --from=builder /app/dist/production /usr/share/rancher/ui-dashboard/dashboard
